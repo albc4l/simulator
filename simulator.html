@@ -1,0 +1,282 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+
+    <title>Analyse stratégie TP1/TP2</title>
+    <script src="./rr_files/Chart.min.js"></script>
+    <script src="./rr_files/utils.js"></script>
+
+    <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <script>
+        $(function() {
+            $("#sliderTp1WinRate").slider({
+                range: "min",
+                value: 50,
+                min: 1,
+                max: 100,
+                slide: function(event, ui) {
+                    $("#sliderTp1WinRateLabel").val("Taux réussite TP1 (%) : " + ui.value);
+                    redraw()
+                }
+            });
+            $("#sliderTp1WinRateLabel").val("Taux réussite TP1 (%) : " + $("#sliderTp1WinRate").slider("value"));
+
+            $("#sliderTp2WinRate").slider({
+                range: "min",
+                value: 50,
+                min: 1,
+                max: 100,
+                slide: function(event, ui) {
+                    $("#sliderTp2WinRateLabel").val("Taux réussite TP2 (%) : " + ui.value);
+                    redraw()
+                }
+            });
+            $("#sliderTp2WinRateLabel").val("Taux réussite TP2 (%) : " + $("#sliderTp2WinRate").slider("value"));
+
+            $("#sliderRr1").slider({
+                range: "min",
+                value: 200,
+                min: 20,
+                max: 1000,
+                slide: function(event, ui) {
+                    $("#sliderRr1Label").val("Risque / Reward TP1 : " + ui.value / 100.0);
+                    redraw()
+                }
+            });
+            $("#sliderRr1Label").val("Risque / Reward TP1 : " + $("#sliderRr1").slider("value") / 100.0);
+
+            $("#sliderRr2").slider({
+                range: "min",
+                value: 300,
+                min: 20,
+                max: 1000,
+                slide: function(event, ui) {
+                    $("#sliderRr2Label").val("Risque / Reward TP2 : " + ui.value / 100.0);
+                    redraw()
+                }
+            });
+            $("#sliderRr2Label").val("Risque / Reward TP2 : " + $("#sliderRr2").slider("value") / 100.0);
+
+            $("#sliderRun").slider({
+                range: "min",
+                value: 200,
+                min: 20,
+                max: 2000,
+                slide: function(event, ui) {
+                    $("#sliderRunLabel").val("Nombre de runs : " + ui.value);
+                    redraw()
+                }
+            });
+            $("#sliderRunLabel").val("Nombre de runs : " + $("#sliderRun").slider("value"));
+
+        });
+    </script>
+
+</head>
+
+<body>
+    <div style="width:75%;">
+        <div class="chartjs-size-monitor">
+            <div class="chartjs-size-monitor-expand">
+                <div class=""></div>
+            </div>
+            <div class="chartjs-size-monitor-shrink">
+                <div class=""></div>
+            </div>
+        </div>
+        <canvas id="canvas" style="display: block; width: 1428px; height: 714px;" width="1428" height="714" class="chartjs-render-monitor"></canvas>
+    </div>
+
+    <div class="row">
+        <div class="two columns">
+
+            <input type="text" id="sliderTp1WinRateLabel" readonly style="border:0; color:black;">
+            <div id="sliderTp1WinRate" style="width:300px; left:10px; top:-15px"></div>
+
+            <input type="text" id="sliderTp2WinRateLabel" readonly style="border:0; color:black;">
+            <div id="sliderTp2WinRate" style="width:300px; left:10px; top:-15px"></div>
+
+        </div>
+        <div class="two columns">
+
+            <input type="text" id="sliderRr1Label" readonly style="border:0; color:black;">
+            <div id="sliderRr1" style="width:300px; left:10px; top:-15px"></div>
+
+            <input type="text" id="sliderRr2Label" readonly style="border:0; color:black;">
+            <div id="sliderRr2" style="width:300px; left:10px; top:-15px"></div>
+
+            <input type="text" id="sliderRunLabel" readonly style="border:0; color:black;">
+            <div id="sliderRun" style="width:300px; left:10px; top:-15px"></div>
+
+        </div>
+    </div>
+
+    <script>
+        var config = {
+            type: 'line',
+            data: {
+
+                labels: []
+
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Simulation trade'
+                },
+                animation: {
+                    duration: 0
+                },
+                hover: {
+                    animationDuration: 0 // duration of animations when hovering an item
+                },
+                responsiveAnimationDuration: 0,
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Nombre trades'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Capital'
+                        }
+                    }]
+                }
+            }
+        };
+
+        window.onload = function() {
+            var ctx = document.getElementById('canvas').getContext('2d');
+            window.myLine = new Chart(ctx, config);
+
+            for (var j = 0; j < 100; j++) {
+                config.data.labels[j] = j;
+            }
+
+            this.totalRun = 0;
+
+            redraw();
+        };
+
+        function redraw() {
+            config.data.datasets = []
+
+            var tp1WinRate = $("#sliderTp1WinRate").slider("value") / 100.0;
+            var tp2WinRate = $("#sliderTp2WinRate").slider("value") / 100.0;
+            var rr1 = $("#sliderRr1").slider("value") / 100.0;
+			var rr2 = $("#sliderRr2").slider("value") / 100.0;;
+			
+			if (rr1>rr2) {
+				return;
+			}
+
+			// x = "allègement"
+			// 0.8 = 80% of exposure is closed on TP1
+
+            for (var x = 1.0; x >= 0.1; x -= 0.25) {
+                var totalRun = 0;
+                var averageOutcome = new Array(100).fill(0)
+
+                for (var i = 0; i < $("#sliderRun").slider("value"); i++) {
+                    totalRun++;
+
+                    var capital = 1000.0;
+					var riskPerc = 0.01;
+					
+                    var closingPercentageOnTp1 = x; 
+                    var beAfterTp1 = true;
+
+					// main loop for trades
+                    for (var tradeId = 0; tradeId < 100; tradeId++) {
+						// here you can substract a commission taken for each trade
+						// capital -= 0.50;
+
+                        // exposure, basically the max you can lose on this trade, based on your capital.
+                        var exposure = capital * riskPerc;
+
+                        // Tp1 reached? 
+                        if (Math.random() <= tp1WinRate) {
+
+							// Winning trade, we multiply the exposure by the TP/SL ratio.
+							// Example: if your exposure is 10$, your ratio is 2:1. You win 20$
+							// This value is only valid if you close 100% of your trade. That's why
+							// we multiply by closingPercentageOnTp1. If this value 
+							// is 0.6, you will add 60% of your 20$ to your capital (=12$). The rest
+							// will be used to try reaching TP2.
+							capital += (exposure * rr1) * closingPercentageOnTp1;
+							
+							// the remaining exposure in our case is 40% of the initial one, so that
+							// makes 8$ that will work towards TP2
+                            exposure *= (1 - closingPercentageOnTp1);
+
+							// then check if TP2.
+                            if (Math.random() <= tp2WinRate) {
+								// your capital will increase by your remaining exposure and the 
+								// ratio. If your remaining exposure is 8$ and the TP2 ratio is 3, then
+								// you win 24$
+                                capital += (exposure * rr2);
+                            } else {
+								// BE logic, if you don't have it, you lose your 24$. Otherwise you lose 0.
+                                if (!beAfterTp1) {
+                                    capital -= exposure;
+                                }
+                            }
+                        } else {
+							// if we don't reach TP1, it's a stop loss resulting in the loss of your initial bet
+                            capital -= exposure;
+						}
+						
+
+                        averageOutcome[tradeId] += capital;
+                    }
+                }
+
+                var colorName = colorNames[config.data.datasets.length % colorNames.length];
+                var newColor = window.chartColors[colorName];
+                var newDataset = {
+                    label: 'Allègement de ' + 100 * closingPercentageOnTp1 + '% après TP1 ',
+                    backgroundColor: newColor,
+                    borderColor: newColor,
+                    data: [],
+                    fill: false
+                };
+
+                for (var tradeId = 0; tradeId < 100; tradeId++) {
+                    newDataset.data[tradeId] = averageOutcome[tradeId] / totalRun;
+                }
+
+                config.data.datasets.push(newDataset);
+            }
+
+            window.myLine.update();
+        }
+
+        var colorNames = Object.keys(window.chartColors);
+    </script>
+
+</html>
